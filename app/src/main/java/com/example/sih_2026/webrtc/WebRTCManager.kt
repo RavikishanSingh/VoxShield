@@ -1,0 +1,166 @@
+package com.example.sih_2026.webrtc
+
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
+import android.util.Base64
+import android.util.Log
+import androidx.core.content.ContextCompat
+import com.example.sih_2026.audio.AudioProcessor
+import com.example.sih_2026.network.AudioChunk
+import com.example.sih_2026.network.NetworkModule
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import java.util.concurrent.atomic.AtomicBoolean
+
+class WebRTCManager(private val context: Context) {
+
+    private val TAG = "WebRTCManager"
+    private val audioProcessor = AudioProcessor()
+    private val wsManager = NetworkModule.webSocketManager
+    private var chunkSequence = 0
+    
+    private var callJob: Job? = null
+    private var timerJob: Job? = null
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private var audioRecord: AudioRecord? = null
+    private val isRecordingMic = AtomicBoolean(false)
+
+    private val _callState = MutableStateFlow(CallState.IDLE)
+    val callState: StateFlow<CallState> = _callState
+
+    private val _audioSampleFlow = MutableStateFlow<ByteArray?>(null)
+    val audioSampleFlow: StateFlow<ByteArray?> = _audioSampleFlow
+
+    private val _audioEnergyLevel = MutableStateFlow(0.0f)
+    val audioEnergyLevel: StateFlow<Float> = _audioEnergyLevel
+
+    private val _callDurationSeconds = MutableStateFlow(0)
+    val callDurationSeconds: StateFlow<Int> = _callDurationSeconds
+
+    private val _isVoiceActive = MutableStateFlow(false)
+    val isVoiceActive: StateFlow<Boolean> = _isVoiceActive
+
+    fun startCall(isCaller: Boolean, onAudioCaptured: (ByteArray) -> Unit) {
+        _callState.value = CallState.CONNECTING
+        Log.d(TAG, "Starting Demo Call. IsCaller: $isCaller")
+
+        coroutineScope.launch {
+            delay(600)
+            _callState.value = CallState.CONNECTED
+            startCallTelemetry()
+            startLiveMicOrSimulationAudioStream(onAudioCaptured)
+        }
+    }
+
+    private fun startCallTelemetry() {
+        _callDurationSeconds.value = 0
+        timerJob?.cancel()
+        timerJob = coroutineScope.launch {
+            while (_callState.value == CallState.CONNECTED) {
+                delay(1000)
+                _callDurationSeconds.value += 1
+            }
+        }
+    }
+
+    private fun startLiveMicOrSimulationAudioStream(onAudioCaptured: (ByteArray) -> Unit) {
+        callJob?.cancel()
+        callJob = coroutineScope.launch {
+            val sampleRate = 16000
+            val channelConfig = AudioFormat.CHANNEL_IN_MONO
+            val audioFormat = AudioFormat.ENCODING_PCM_16BIT
+            val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2
+
+            var micInitialized = false
+            try {
+                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    audioRecord = AudioRecord(
+                        MediaRecorder.AudioSource.VOICE_RECOGNITION,
+                        sampleRate,
+                        channelConfig,
+                        audioFormat,
+                        bufferSize
+                    )
+                    if (audioRecord?.state == AudioRecord.STATE_INITIALIZED) {
+                        audioRecord?.startRecording()
+                        isRecordingMic.set(true)
+                        micInitialized = true
+                        Log.d(TAG, "Mic initialized for Demo Call.")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Mic initialization failed: ${e.message}")
+            }
+
+            try {
+                val buffer = ByteArray(bufferSize)
+                while (_callState.value == CallState.CONNECTED) {
+                    if (micInitialized && isRecordingMic.get()) {
+                        val readBytes = audioRecord?.read(buffer, 0, buffer.size) ?: 0
+                        if (readBytes > 0) {
+                            val pcmChunk = buffer.copyOf(readBytes)
+                            _audioSampleFlow.value = pcmChunk
+
+                            val rms = audioProcessor.calculateRms(pcmChunk)
+                            _audioEnergyLevel.value = rms
+                            _isVoiceActive.value = rms > 0.03f
+
+                            // Stream to backend
+                            val b64Audio = Base64.encodeToString(pcmChunk, Base64.NO_WRAP)
+                            wsManager.sendAudio(AudioChunk(
+                                call_id = "DEMO",
+                                sequence = chunkSequence++,
+                                timestamp = System.currentTimeMillis(),
+                                audio = b64Audio
+                            ))
+
+                            onAudioCaptured(pcmChunk)
+                        }
+                    } else {
+                        // Fallback simulation
+                        delay(2000)
+                        val dummyPcmChunk = ByteArray(16000) { 0 }
+                        onAudioCaptured(dummyPcmChunk)
+                    }
+                    delay(200)
+                }
+            } catch (e: CancellationException) {
+                Log.d(TAG, "Stream cancelled.")
+            } finally {
+                stopMicRecording()
+            }
+        }
+    }
+
+    private fun stopMicRecording() {
+        isRecordingMic.set(false)
+        try {
+            audioRecord?.stop()
+            audioRecord?.release()
+            audioRecord = null
+            Log.d(TAG, "Mic released.")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error releasing mic", e)
+        }
+    }
+
+    fun endCall() {
+        _callState.value = CallState.ENDED
+        callJob?.cancel()
+        timerJob?.cancel()
+        stopMicRecording()
+        _callDurationSeconds.value = 0
+        _audioEnergyLevel.value = 0.0f
+        _isVoiceActive.value = false
+    }
+}
+
+enum class CallState {
+    IDLE, CONNECTING, CONNECTED, ENDED
+}

@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+websockets
+pydantic
+torch
+numpy
+openai-whisper

@@ -1,0 +1,9 @@
+{
+    "calls": [],
+    "incidents": [],
+    "stats": {
+        "total_analyzed": 0,
+        "threats_detected": 0,
+        "attacks_blocked": 0
+    }
+}

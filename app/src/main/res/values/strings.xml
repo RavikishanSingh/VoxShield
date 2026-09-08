@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">SIH-2026</string>
+    <string name="accessibility_service_description">VoxShield protects you against financial scams and deepfake calls by monitoring high-risk app screens during active calls.</string>
+</resources>
