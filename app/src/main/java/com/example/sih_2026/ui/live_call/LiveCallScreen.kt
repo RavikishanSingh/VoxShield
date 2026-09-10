@@ -19,14 +19,31 @@ import androidx.compose.ui.unit.sp
 import com.example.sih_2026.ui.calls.MetricRow
 import androidx.compose.runtime.LaunchedEffect
 import com.example.sih_2026.ui.components.VoiceActivityBar
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiveCallScreen(viewModel: LiveCallViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { _ ->
+        viewModel.startMonitoring()
+    }
 
     LaunchedEffect(Unit) {
-        viewModel.startMonitoring()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.startMonitoring()
+        } else {
+            permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+        }
     }
 
     Scaffold(
@@ -34,7 +51,12 @@ fun LiveCallScreen(viewModel: LiveCallViewModel) {
             TopAppBar(
                 title = { Text("LIVE VOICE GUARD", fontWeight = FontWeight.Bold, fontSize = 16.sp) },
                 actions = {
-                    Text(uiState.connectionStatus, color = if (uiState.connectionStatus == "Active") Color(0xFF4CAF50) else Color.Gray, modifier = Modifier.padding(end = 16.dp))
+                    val statusColor = when {
+                        uiState.connectionStatus == "Active" -> Color(0xFF4CAF50)
+                        uiState.connectionStatus.startsWith("Error") -> Color(0xFFF44336)
+                        else -> Color(0xFFFACC15)
+                    }
+                    Text(uiState.connectionStatus, color = statusColor, fontSize = 12.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(end = 16.dp))
                 }
             )
         }
@@ -51,9 +73,23 @@ fun LiveCallScreen(viewModel: LiveCallViewModel) {
                 
                 VoiceActivityBar(audioLevel = uiState.audioEnergy)
                 Spacer(modifier = Modifier.height(24.dp))
+
+                if (uiState.syntheticVoice > 0.65f) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFDC2626))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("🚨 AI VOICE CLONE DETECTED", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 14.sp)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Synthetic deepfake voice signature identified! Probability: ${(uiState.syntheticVoice * 100).toInt()}%", color = Color.White, fontSize = 12.sp)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
                 
-                MetricRow("Voice Authenticity", 1f - uiState.syntheticVoice, uiState.syntheticVoice > 0.7f)
-                MetricRow("Speaker Identity", uiState.speakerMatch, uiState.speakerMatch < 0.5f)
+                MetricRow("🤖 AI Voice Clone Risk", uiState.syntheticVoice, uiState.syntheticVoice > 0.65f)
+                MetricRow("Speaker Identity Match", uiState.speakerMatch, uiState.speakerMatch < 0.5f)
                 MetricRow("Live Stream Health", 0.95f, false)
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -120,6 +156,15 @@ fun LiveCallScreen(viewModel: LiveCallViewModel) {
                 
                 Spacer(modifier = Modifier.height(32.dp))
                 
+                Button(
+                    onClick = { viewModel.simulateLiveSpeech() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2196F3))
+                ) {
+                    Text("🎤 SIMULATE LIVE SPEECH & TRANSCRIPT")
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+
                 Button(
                     onClick = { viewModel.stopMonitoring() },
                     modifier = Modifier.fillMaxWidth(),

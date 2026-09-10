@@ -20,21 +20,22 @@ class RocketRideClient:
         intents = semantic_intent.get("intents", [])
         intent_boost = semantic_intent.get("risk_boost", 0.0)
 
-        # 1. Base Synthesis Logic
-        # Highly weighted towards Voice Prob and Speaker mismatch
-        raw_score = (voice_prob * 0.4) + (speaker_risk * 0.3) + (replay_prob * 0.1) + (intent_boost * 0.2)
+        # 1. Base Synthesis Logic - Primary emphasis on AI Voice Clone Detection (Deepfake)
+        raw_score = (voice_prob * 0.5) + (speaker_risk * 0.25) + (replay_prob * 0.05) + (intent_boost * 0.2)
 
         # 2. Heuristic Correlations (The "Brain" part)
         reasons = []
+        if voice_prob > 0.65:
+            reasons.append("AI_VOICE_CLONE_DETECTED")
         if voice_prob > 0.8:
             reasons.append("HIGH_CONFIDENCE_DEEPFAKE")
         if speaker_risk > 0.7:
             reasons.append("SPEAKER_IDENTITY_MISMATCH")
         if "FINANCIAL_FRAUD" in intents:
             reasons.append("SENSITIVE_FINANCIAL_INTENT")
-            # Cross-correlation boost: AI Voice + Money Request = Extreme Danger
-            if voice_prob > 0.6:
-                raw_score = min(1.0, raw_score + 0.3)
+            # Cross-correlation boost: AI Voice Clone + Money Request = Extreme Danger
+            if voice_prob > 0.5:
+                raw_score = min(1.0, raw_score + 0.35)
                 reasons.append("CRITICAL_CROSS_MODAL_THREAT")
 
         if "URGENCY_COERCION" in intents:

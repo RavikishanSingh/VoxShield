@@ -46,15 +46,15 @@ class WebRTCManager(private val context: Context) {
     private val _isVoiceActive = MutableStateFlow(false)
     val isVoiceActive: StateFlow<Boolean> = _isVoiceActive
 
-    fun startCall(isCaller: Boolean, onAudioCaptured: (ByteArray) -> Unit) {
+    fun startCall(isCaller: Boolean, callId: String = "DEMO", onAudioCaptured: (ByteArray) -> Unit) {
         _callState.value = CallState.CONNECTING
-        Log.d(TAG, "Starting Demo Call. IsCaller: $isCaller")
+        Log.d(TAG, "Starting Call session: $callId. IsCaller: $isCaller")
 
         coroutineScope.launch {
             delay(600)
             _callState.value = CallState.CONNECTED
             startCallTelemetry()
-            startLiveMicOrSimulationAudioStream(onAudioCaptured)
+            startLiveMicOrSimulationAudioStream(callId, onAudioCaptured)
         }
     }
 
@@ -69,29 +69,45 @@ class WebRTCManager(private val context: Context) {
         }
     }
 
-    private fun startLiveMicOrSimulationAudioStream(onAudioCaptured: (ByteArray) -> Unit) {
+    private fun startLiveMicOrSimulationAudioStream(callId: String, onAudioCaptured: (ByteArray) -> Unit) {
         callJob?.cancel()
         callJob = coroutineScope.launch {
             val sampleRate = 16000
             val channelConfig = AudioFormat.CHANNEL_IN_MONO
             val audioFormat = AudioFormat.ENCODING_PCM_16BIT
-            val bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat) * 2
+            val minBufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioFormat)
+            val bufferSize = maxOf(minBufferSize * 2, 3200)
 
             var micInitialized = false
             try {
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    audioRecord = AudioRecord(
+                    val sources = arrayOf(
                         MediaRecorder.AudioSource.VOICE_RECOGNITION,
-                        sampleRate,
-                        channelConfig,
-                        audioFormat,
-                        bufferSize
+                        MediaRecorder.AudioSource.MIC,
+                        MediaRecorder.AudioSource.DEFAULT
                     )
-                    if (audioRecord?.state == AudioRecord.STATE_INITIALIZED) {
-                        audioRecord?.startRecording()
-                        isRecordingMic.set(true)
-                        micInitialized = true
-                        Log.d(TAG, "Mic initialized for Demo Call.")
+                    for (source in sources) {
+                        try {
+                            val record = AudioRecord(
+                                source,
+                                sampleRate,
+                                channelConfig,
+                                audioFormat,
+                                bufferSize
+                            )
+                            if (record.state == AudioRecord.STATE_INITIALIZED) {
+                                audioRecord = record
+                                audioRecord?.startRecording()
+                                isRecordingMic.set(true)
+                                micInitialized = true
+                                Log.d(TAG, "AudioRecord initialized successfully with source $source")
+                                break
+                            } else {
+                                record.release()
+                            }
+                        } catch (ex: Exception) {
+                            Log.w(TAG, "Failed initializing AudioRecord with source $source: ${ex.message}")
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -109,26 +125,34 @@ class WebRTCManager(private val context: Context) {
 
                             val rms = audioProcessor.calculateRms(pcmChunk)
                             _audioEnergyLevel.value = rms
-                            _isVoiceActive.value = rms > 0.03f
+                            _isVoiceActive.value = rms > 0.01f
 
                             // Stream to backend
                             val b64Audio = Base64.encodeToString(pcmChunk, Base64.NO_WRAP)
                             wsManager.sendAudio(AudioChunk(
-                                call_id = "DEMO",
+                                call_id = callId,
                                 sequence = chunkSequence++,
                                 timestamp = System.currentTimeMillis(),
                                 audio = b64Audio
                             ))
 
                             onAudioCaptured(pcmChunk)
+                        } else {
+                            delay(50)
                         }
                     } else {
-                        // Fallback simulation
-                        delay(2000)
-                        val dummyPcmChunk = ByteArray(16000) { 0 }
+                        // Fallback simulation with gentle synthetic voice activity if mic unavailable
+                        delay(200)
+                        _audioEnergyLevel.value = 0.05f
+                        val dummyPcmChunk = ByteArray(1600) { (it % 100).toByte() }
+                        wsManager.sendAudio(AudioChunk(
+                            call_id = callId,
+                            sequence = chunkSequence++,
+                            timestamp = System.currentTimeMillis(),
+                            audio = Base64.encodeToString(dummyPcmChunk, Base64.NO_WRAP)
+                        ))
                         onAudioCaptured(dummyPcmChunk)
                     }
-                    delay(200)
                 }
             } catch (e: CancellationException) {
                 Log.d(TAG, "Stream cancelled.")

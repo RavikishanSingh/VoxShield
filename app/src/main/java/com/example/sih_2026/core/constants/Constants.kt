@@ -1,8 +1,8 @@
 package com.example.sih_2026.core.constants
 
 object Constants {
-    // Replace with your PC's IP address from ipconfig
-    private const val SERVER_IP = "172.30.254.239" 
+    // Use 127.0.0.1 with ADB reverse port forwarding (configured via adb reverse tcp:8000 tcp:8000).
+    private const val SERVER_IP = "127.0.0.1" 
     private const val PORT = "8000"
 
     const val BASE_URL = "http://$SERVER_IP:$PORT"
