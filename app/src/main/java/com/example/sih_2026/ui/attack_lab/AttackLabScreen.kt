@@ -45,7 +45,7 @@ fun AttackLabScreen(viewModel: AttackLabViewModel) {
     val infiniteTransition = rememberInfiniteTransition(label = "blinking")
     val alpha by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = 0f,
+        targetValue = 0.2f,
         animationSpec = infiniteRepeatable(
             animation = tween(800),
             repeatMode = RepeatMode.Reverse
@@ -55,119 +55,141 @@ fun AttackLabScreen(viewModel: AttackLabViewModel) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("SECURITY FORENSICS LAB", fontWeight = FontWeight.Bold) })
+            TopAppBar(
+                title = { Text("SECURITY FORENSICS LAB", fontWeight = FontWeight.Bold, fontSize = 16.sp) }
+            )
         }
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                Text("Unified Forensic Analysis", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
-                Text("Analyze live voice or existing recordings for multiple fraud vectors simultaneously.", fontSize = 12.sp, color = Color.Gray)
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                    LabActionButton(
-                        "SCAN LIVE",
-                        Icons.Default.Mic,
-                        Color(0xFF818CF8),
-                        modifier = Modifier.weight(1f),
-                        enabled = !uiState.isRunning,
-                        onClick = { viewModel.startLiveScan() }
-                    )
-                    LabActionButton(
-                        "TEST FILE",
-                        Icons.Default.AudioFile,
-                        Color(0xFF34D399),
-                        modifier = Modifier.weight(1f),
-                        enabled = !uiState.isRunning,
-                        onClick = { filePickerLauncher.launch("audio/*") }
-                    )
-                }
-                
-                Spacer(modifier = Modifier.height(24.dp))
-                
-                if (uiState.isRunning) {
-                    Button(
-                        onClick = { viewModel.stopAnalysis() },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
-                    ) {
-                        Text("STOP ANALYSIS")
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("Deepfake & Spoof Forensics", fontWeight = FontWeight.ExtraBold, fontSize = 18.sp, color = MaterialTheme.colorScheme.primary)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text("Test live microphone streams or upload audio recordings for multi-vector threat analysis.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Spacer(modifier = Modifier.height(20.dp))
+                        
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            LabActionButton(
+                                "SCAN LIVE",
+                                Icons.Default.Mic,
+                                MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.weight(1f),
+                                enabled = !uiState.isRunning,
+                                onClick = { viewModel.startLiveScan() }
+                            )
+                            LabActionButton(
+                                "TEST FILE",
+                                Icons.Default.AudioFile,
+                                Color(0xFF059669),
+                                modifier = Modifier.weight(1f),
+                                enabled = !uiState.isRunning,
+                                onClick = { filePickerLauncher.launch("audio/*") }
+                            )
+                        }
+                        
+                        if (uiState.isRunning) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            OutlinedButton(
+                                onClick = { viewModel.stopAnalysis() },
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFDC2626))
+                            ) {
+                                Text("STOP FORENSIC ANALYSIS", fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 }
-                
-                Spacer(modifier = Modifier.height(32.dp))
             }
 
             if (uiState.isRunning) {
                 item {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            modifier = Modifier.size(8.dp).alpha(if (uiState.mode == "LIVE") alpha else 1f),
-                            shape = CircleShape,
-                            color = if (uiState.mode == "LIVE") Color.Red else Color.Green
-                        ) {}
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (uiState.mode == "LIVE") "LIVE STREAM ACTIVE" else "PROCESSING FILE",
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Gray,
-                            fontSize = 12.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    VoiceActivityBar(audioLevel = uiState.audioEnergy)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    if (uiState.mode == "FILE") {
-                        LinearProgressIndicator(
-                            progress = { uiState.streamingProgress },
-                            modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    ) {
+                        Column(modifier = Modifier.padding(20.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Surface(
+                                    modifier = Modifier.size(10.dp).alpha(if (uiState.mode == "LIVE") alpha else 1f),
+                                    shape = CircleShape,
+                                    color = if (uiState.mode == "LIVE") Color(0xFFDC2626) else Color(0xFF059669)
+                                ) {}
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = if (uiState.mode == "LIVE") "LIVE STREAM FORENSICS ACTIVE" else "UPLOADING & ANALYZING FILE",
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            VoiceActivityBar(audioLevel = uiState.audioEnergy)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            if (uiState.mode == "FILE") {
+                                LinearProgressIndicator(
+                                    progress = { uiState.streamingProgress },
+                                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp))
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
 
-                    MetricRow("Synthetic Voice", 1f - uiState.syntheticProb, uiState.syntheticProb > 0.7f)
-                    MetricRow("Speaker Match", uiState.speakerMatch, uiState.speakerMatch < 0.5f)
-                    MetricRow("Replay Signature", 1f - uiState.replayProb, uiState.replayProb > 0.7f)
-                    
-                    Spacer(modifier = Modifier.height(32.dp))
-                    
-                    Text("DYNAMIC LOG", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.Gray)
+                            MetricRow("AI Voice Clone (Deepfake)", 1f - uiState.syntheticProb, uiState.syntheticProb > 0.7f)
+                            MetricRow("Speaker Identity Match", uiState.speakerMatch, uiState.speakerMatch < 0.5f)
+                            MetricRow("Replay Signature", 1f - uiState.replayProb, uiState.replayProb > 0.7f)
+                        }
+                    }
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (uiState.riskScore > 70) Color(0xFF7F1D1D) else Color(0xFF065F46)
+                        )
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(24.dp).fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Aggregated Threat Score", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("${uiState.riskScore}/100", fontSize = 48.sp, fontWeight = FontWeight.ExtraBold, color = Color.White)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(uiState.statusText, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 16.sp)
+                        }
+                    }
+                }
+
+                item {
+                    Text("FORENSIC LOG STREAM", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 items(uiState.transcriptLog) { log ->
                     Card(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF334155))
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                     ) {
-                        Text(log, modifier = Modifier.padding(12.dp), fontSize = 12.sp, color = Color.White)
+                        Text(log, modifier = Modifier.padding(14.dp), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
                     }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(if (uiState.riskScore > 70) Color(0xFFF44336) else Color(0xFF4CAF50))
-                            .padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Aggregated Risk", color = Color.White.copy(alpha = 0.8f))
-                            Text("${uiState.riskScore}/100", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Text(uiState.statusText, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
@@ -178,15 +200,15 @@ fun AttackLabScreen(viewModel: AttackLabViewModel) {
 fun LabActionButton(label: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, modifier: Modifier, enabled: Boolean, onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = modifier.height(100.dp),
+        modifier = modifier.height(90.dp),
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(containerColor = color)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(32.dp))
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Icon(icon, contentDescription = null, modifier = Modifier.size(28.dp), tint = Color.White)
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(label, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
         }
     }
 }

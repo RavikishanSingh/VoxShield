@@ -1,5 +1,4 @@
-# Task List: Fix Backend Audio Processing & Output Generation
+# Task List: Comprehensive Project Documentation & Research References
 
-- [x] Update `backend/main.py` audio processing loop to ensure fallback transcription and guaranteed risk telemetry
-- [x] Verify backend execution and WebSocket risk updates
-- [x] Create walkthrough artifact
+- [ ] Create `PROJECT_DOCUMENTATION.md` with executive summary, system architecture, core modules, API specifications, and academic research papers + references
+- [ ] Create walkthrough artifact

@@ -14,6 +14,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -39,10 +41,16 @@ class MainActivity : ComponentActivity() {
             val navController = rememberNavController()
             
             MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = Color(0xFF818CF8),
-                    background = Color(0xFF1E293B),
-                    surface = Color(0xFF334155),
+                colorScheme = lightColorScheme(
+                    primary = Color(0xFF4F46E5), // Indigo 600
+                    onPrimary = Color.White,
+                    background = Color(0xFFF1F5F9), // Slate 100
+                    onBackground = Color(0xFF0F172A),
+                    surface = Color(0xFFFFFFFF), // Crisp White
+                    onSurface = Color(0xFF0F172A),
+                    surfaceVariant = Color(0xFFE2E8F0), // Slate 200
+                    onSurfaceVariant = Color(0xFF64748B),
+                    error = Color(0xFFDC2626)
                 ),
             ) {
                 Scaffold(
@@ -57,12 +65,13 @@ class MainActivity : ComponentActivity() {
 
                         if (showBottomBar) {
                             NavigationBar(
-                                containerColor = Color(0xFF1E293B),
-                                contentColor = Color.White
+                                containerColor = Color(0xFFFFFFFF),
+                                contentColor = Color(0xFF0F172A),
+                                tonalElevation = 12.dp
                             ) {
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Home, contentDescription = null) },
-                                    label = { Text("Home") },
+                                    label = { Text("Home", fontWeight = FontWeight.Medium) },
                                     selected = currentDestination?.hierarchy?.any { it.route == VoxShieldDestinations.HOME } == true,
                                     onClick = {
                                         navController.navigate(VoxShieldDestinations.HOME) {
@@ -70,11 +79,18 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                             restoreState = true
                                         }
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF818CF8),
+                                        selectedTextColor = Color(0xFF818CF8),
+                                        unselectedIconColor = Color(0xFF94A3B8),
+                                        unselectedTextColor = Color(0xFF94A3B8),
+                                        indicatorColor = Color(0xFF6366F1).copy(alpha = 0.25f)
+                                    )
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Science, contentDescription = null) },
-                                    label = { Text("Labs") },
+                                    label = { Text("Labs", fontWeight = FontWeight.Medium) },
                                     selected = currentDestination?.hierarchy?.any { it.route == VoxShieldDestinations.ATTACK_LAB } == true,
                                     onClick = {
                                         navController.navigate(VoxShieldDestinations.ATTACK_LAB) {
@@ -82,11 +98,18 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                             restoreState = true
                                         }
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF818CF8),
+                                        selectedTextColor = Color(0xFF818CF8),
+                                        unselectedIconColor = Color(0xFF94A3B8),
+                                        unselectedTextColor = Color(0xFF94A3B8),
+                                        indicatorColor = Color(0xFF6366F1).copy(alpha = 0.25f)
+                                    )
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.VerifiedUser, contentDescription = null) },
-                                    label = { Text("Profiles") },
+                                    label = { Text("Profiles", fontWeight = FontWeight.Medium) },
                                     selected = currentDestination?.hierarchy?.any { it.route == VoxShieldDestinations.PROFILES } == true,
                                     onClick = {
                                         navController.navigate(VoxShieldDestinations.PROFILES) {
@@ -94,11 +117,18 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                             restoreState = true
                                         }
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF818CF8),
+                                        selectedTextColor = Color(0xFF818CF8),
+                                        unselectedIconColor = Color(0xFF94A3B8),
+                                        unselectedTextColor = Color(0xFF94A3B8),
+                                        indicatorColor = Color(0xFF6366F1).copy(alpha = 0.25f)
+                                    )
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.History, contentDescription = null) },
-                                    label = { Text("Incidents") },
+                                    label = { Text("Incidents", fontWeight = FontWeight.Medium) },
                                     selected = currentDestination?.hierarchy?.any { it.route == VoxShieldDestinations.INCIDENTS } == true,
                                     onClick = {
                                         navController.navigate(VoxShieldDestinations.INCIDENTS) {
@@ -106,11 +136,18 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                             restoreState = true
                                         }
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF818CF8),
+                                        selectedTextColor = Color(0xFF818CF8),
+                                        unselectedIconColor = Color(0xFF94A3B8),
+                                        unselectedTextColor = Color(0xFF94A3B8),
+                                        indicatorColor = Color(0xFF6366F1).copy(alpha = 0.25f)
+                                    )
                                 )
                                 NavigationBarItem(
                                     icon = { Icon(Icons.Default.Settings, contentDescription = null) },
-                                    label = { Text("Settings") },
+                                    label = { Text("Settings", fontWeight = FontWeight.Medium) },
                                     selected = currentDestination?.hierarchy?.any { it.route == VoxShieldDestinations.SETTINGS } == true,
                                     onClick = {
                                         navController.navigate(VoxShieldDestinations.SETTINGS) {
@@ -118,7 +155,14 @@ class MainActivity : ComponentActivity() {
                                             launchSingleTop = true
                                             restoreState = true
                                         }
-                                    }
+                                    },
+                                    colors = NavigationBarItemDefaults.colors(
+                                        selectedIconColor = Color(0xFF818CF8),
+                                        selectedTextColor = Color(0xFF818CF8),
+                                        unselectedIconColor = Color(0xFF94A3B8),
+                                        unselectedTextColor = Color(0xFF94A3B8),
+                                        indicatorColor = Color(0xFF6366F1).copy(alpha = 0.25f)
+                                    )
                                 )
                             }
                         }

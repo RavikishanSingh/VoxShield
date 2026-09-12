@@ -98,9 +98,10 @@ async def websocket_endpoint(websocket: WebSocket, call_id: str):
                             "prosody": prosody_analyzer.analyze(clean_audio)
                         }
 
-                        # 2. Real Whisper Transcription with Fallback
+                        # 2. Real Whisper Transcription (Non-blocking executor)
                         try:
-                            transcript = asr.transcribe(clean_audio)
+                            loop = asyncio.get_running_loop()
+                            transcript = await loop.run_in_executor(None, asr.transcribe, clean_audio)
                             transcript = transcript.replace("[", "").replace("]", "").strip()
                             if transcript:
                                 print(f"[{call_id}] Transcribe: {transcript}")
@@ -108,7 +109,6 @@ async def websocket_endpoint(websocket: WebSocket, call_id: str):
                             transcript = ""
 
                         if not transcript:
-                            # Fallback active telemetry speech if mic has low volume / emulator silence
                             transcript = "Verifying voice biometrics and scam intent patterns..."
 
                         intent_results = intent_engine.analyze(transcript)

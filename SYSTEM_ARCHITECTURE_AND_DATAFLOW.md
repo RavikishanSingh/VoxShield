@@ -110,7 +110,6 @@ Translates the $0-100$ risk score into a strict operational directive:
 *   $40 - 59$: `VERIFY` (Yellow UI, prompt user caution)
 *   $60 - 84$: `MFA` (Orange UI, prompt secondary verification / challenge question)
 *   $85 - 100$: `BLOCK` (Red UI, auto-terminate transaction, generate critical incident)
-
 ---
 
 ## 5. Security, Privacy & Audit Trail

@@ -29,7 +29,7 @@ class CallStateReceiver : BroadcastReceiver() {
                     context.startService(serviceIntent)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to start CallMonitorService", e)
+                Log.w(TAG, "Background foreground service start restricted on Android 14+: ${e.message}")
             }
         }
     }
